@@ -8,13 +8,14 @@
 import AppIntents
 import SwiftData
 import SwiftUI
+import MLXLMCommon
 
 @available(iOS 16.0, *)
 struct GenerateTextIntent: AppIntent {
     static var title: LocalizedStringResource = "Generate Text"
     static var description: LocalizedStringResource = "Generate creative text with Eris"
     
-    @Parameter(title: "Type of Text", description: "What kind of text to generate", default: .email)
+    @Parameter(title: "Type of Text", description: "What kind of text to generate", default: .paragraph)
     var textType: TextType
     
     @Parameter(title: "Topic or Context", description: "What the text should be about")
@@ -23,18 +24,30 @@ struct GenerateTextIntent: AppIntent {
     @Parameter(title: "Tone", description: "The tone of the text", default: .neutral)
     var tone: WritingTone
     
+    @Parameter(title: "Save Chat", description: "Save this generation in the app", default: false)
+    var saveChat: Bool
+    
+    @Parameter(title: "Model Name", description: "Type the model name (e.g., 'Llama', 'Qwen', 'Gemma') or leave empty for default")
+    var modelName: String?
+    
     static var parameterSummary: some ParameterSummary {
         Summary("Generate \(\.$textType) about \(\.$topic)") {
             \.$tone
+            \.$saveChat
+            \.$modelName
         }
     }
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
-        // Check if we have an active model
-        guard let activeModel = ModelManager.shared.activeModel else {
-            let error = "No AI model selected. Please open Eris and download a model first."
-            return .result(value: error, dialog: IntentDialog(stringLiteral: error))
+        // Select the model to use
+        let modelResult = IntentUtils.selectModel(requestedName: modelName)
+        guard case .success(let selectedModel) = modelResult else {
+            if case .failure(let error) = modelResult {
+                let errorMessage = error.localizedDescription
+                return .result(value: errorMessage, dialog: IntentDialog(stringLiteral: errorMessage))
+            }
+            return .result(value: "Unknown error", dialog: IntentDialog(stringLiteral: "Unknown error"))
         }
         
         // Build generation prompt
@@ -46,17 +59,19 @@ struct GenerateTextIntent: AppIntent {
         thread.addMessage(userMessage)
         
         // Generate text
-        let llmEvaluator = LLMEvaluator()
         let systemPrompt = "You are a creative writing assistant. Generate high-quality content that matches the requested style and tone."
-        
-        let generatedText = await llmEvaluator.generate(
+        let generatedText = await IntentUtils.generateResponse(
             thread: thread,
+            model: selectedModel,
             systemPrompt: systemPrompt
         )
         
         // Add assistant response
         let assistantMessage = Message(content: generatedText, role: .assistant)
         thread.addMessage(assistantMessage)
+        
+        // Save the chat if requested
+        IntentUtils.saveThreadIfNeeded(thread, saveChat: saveChat)
         
         return .result(value: generatedText, dialog: IntentDialog(stringLiteral: generatedText))
     }

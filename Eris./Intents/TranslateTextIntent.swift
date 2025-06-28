@@ -8,6 +8,7 @@
 import AppIntents
 import SwiftData
 import SwiftUI
+import MLXLMCommon
 
 @available(iOS 16.0, *)
 struct TranslateTextIntent: AppIntent {
@@ -23,18 +24,30 @@ struct TranslateTextIntent: AppIntent {
     @Parameter(title: "Source Language", description: "Language to translate from", default: .autoDetect)
     var sourceLanguage: Language
     
+    @Parameter(title: "Save Chat", description: "Save this translation in the app", default: false)
+    var saveChat: Bool
+    
+    @Parameter(title: "Model Name", description: "Type the model name (e.g., 'Llama', 'Qwen', 'Gemma') or leave empty for default")
+    var modelName: String?
+    
     static var parameterSummary: some ParameterSummary {
         Summary("Translate '\(\.$text)' to \(\.$targetLanguage)") {
             \.$sourceLanguage
+            \.$saveChat
+            \.$modelName
         }
     }
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
-        // Check if we have an active model
-        guard let activeModel = ModelManager.shared.activeModel else {
-            let error = "No AI model selected. Please open Eris and download a model first."
-            return .result(value: error, dialog: IntentDialog(stringLiteral: error))
+        // Select the model to use
+        let modelResult = IntentUtils.selectModel(requestedName: modelName)
+        guard case .success(let selectedModel) = modelResult else {
+            if case .failure(let error) = modelResult {
+                let errorMessage = error.localizedDescription
+                return .result(value: errorMessage, dialog: IntentDialog(stringLiteral: errorMessage))
+            }
+            return .result(value: "Unknown error", dialog: IntentDialog(stringLiteral: "Unknown error"))
         }
         
         // Build translation prompt
@@ -51,17 +64,19 @@ struct TranslateTextIntent: AppIntent {
         thread.addMessage(userMessage)
         
         // Generate translation
-        let llmEvaluator = LLMEvaluator()
         let systemPrompt = "You are a professional translator. Provide accurate, natural-sounding translations while preserving the original meaning and tone."
-        
-        let translation = await llmEvaluator.generate(
+        let translation = await IntentUtils.generateResponse(
             thread: thread,
+            model: selectedModel,
             systemPrompt: systemPrompt
         )
         
         // Add assistant response
         let assistantMessage = Message(content: translation, role: .assistant)
         thread.addMessage(assistantMessage)
+        
+        // Save the chat if requested
+        IntentUtils.saveThreadIfNeeded(thread, saveChat: saveChat)
         
         return .result(value: translation, dialog: IntentDialog(stringLiteral: translation))
     }

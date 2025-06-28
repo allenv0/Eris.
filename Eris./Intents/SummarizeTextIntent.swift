@@ -8,6 +8,7 @@
 import AppIntents
 import SwiftData
 import SwiftUI
+import MLXLMCommon
 
 @available(iOS 16.0, *)
 struct SummarizeTextIntent: AppIntent {
@@ -20,18 +21,30 @@ struct SummarizeTextIntent: AppIntent {
     @Parameter(title: "Summary Length", description: "How long should the summary be", default: .medium)
     var summaryLength: SummaryLength
     
+    @Parameter(title: "Save Chat", description: "Save this task in the app", default: false)
+    var saveChat: Bool
+    
+    @Parameter(title: "Model Name", description: "Type the model name (e.g., 'Llama', 'Qwen', 'Gemma') or leave empty for default")
+    var modelName: String?
+    
     static var parameterSummary: some ParameterSummary {
         Summary("Summarize this text: \(\.$text)") {
             \.$summaryLength
+            \.$saveChat
+            \.$modelName
         }
     }
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
-        // Check if we have an active model
-        guard let activeModel = ModelManager.shared.activeModel else {
-            let error = "No AI model selected. Please open Eris and download a model first."
-            return .result(value: error, dialog: IntentDialog(stringLiteral: error))
+        // Select the model to use
+        let modelResult = IntentUtils.selectModel(requestedName: modelName)
+        guard case .success(let selectedModel) = modelResult else {
+            if case .failure(let error) = modelResult {
+                let errorMessage = error.localizedDescription
+                return .result(value: errorMessage, dialog: IntentDialog(stringLiteral: errorMessage))
+            }
+            return .result(value: "Unknown error", dialog: IntentDialog(stringLiteral: "Unknown error"))
         }
         
         // Create prompt for summarization
@@ -47,17 +60,19 @@ struct SummarizeTextIntent: AppIntent {
         thread.addMessage(userMessage)
         
         // Generate summary
-        let llmEvaluator = LLMEvaluator()
         let systemPrompt = "You are an expert at creating clear, concise summaries. Focus on the key points and main ideas."
-        
-        let summary = await llmEvaluator.generate(
+        let summary = await IntentUtils.generateResponse(
             thread: thread,
+            model: selectedModel,
             systemPrompt: systemPrompt
         )
         
         // Add assistant response
         let assistantMessage = Message(content: summary, role: .assistant)
         thread.addMessage(assistantMessage)
+        
+        // Save the chat if requested
+        IntentUtils.saveThreadIfNeeded(thread, saveChat: saveChat)
         
         return .result(value: summary, dialog: IntentDialog(stringLiteral: summary))
     }

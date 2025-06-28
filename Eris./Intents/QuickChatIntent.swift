@@ -8,6 +8,7 @@
 import AppIntents
 import SwiftData
 import SwiftUI
+import MLXLMCommon
 
 @available(iOS 16.0, *)
 struct QuickChatIntent: AppIntent {
@@ -23,19 +24,31 @@ struct QuickChatIntent: AppIntent {
     @Parameter(title: "Response Style", description: "How Eris should respond", default: .normal)
     var responseStyle: ResponseStyle
     
+    @Parameter(title: "Save Chat", description: "Save this conversation in the app", default: false)
+    var saveChat: Bool
+    
+    @Parameter(title: "Model Name", description: "Type the model name (e.g., 'Llama', 'Qwen', 'Gemma') or leave empty for default")
+    var modelName: String?
+    
     static var parameterSummary: some ParameterSummary {
         Summary("Ask Eris: \(\.$prompt)") {
             \.$continuous
             \.$responseStyle
+            \.$saveChat
+            \.$modelName
         }
     }
     
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
-        // Check if we have an active model
-        guard let activeModel = ModelManager.shared.activeModel else {
-            let error = "No AI model selected. Please open Eris and download a model first."
-            return .result(value: error, dialog: IntentDialog(stringLiteral: error))
+        // Select the model to use
+        let modelResult = IntentUtils.selectModel(requestedName: modelName)
+        guard case .success(let selectedModel) = modelResult else {
+            if case .failure(let error) = modelResult {
+                let errorMessage = error.localizedDescription
+                return .result(value: errorMessage, dialog: IntentDialog(stringLiteral: errorMessage))
+            }
+            return .result(value: "Unknown error", dialog: IntentDialog(stringLiteral: "Unknown error"))
         }
         
         // Create a new thread for this shortcut session
@@ -45,12 +58,11 @@ struct QuickChatIntent: AppIntent {
         let userMessage = Message(content: prompt, role: .user)
         thread.addMessage(userMessage)
         
-        // Generate response
-        let llmEvaluator = LLMEvaluator()
+        // Generate response with the selected model
         let systemPrompt = buildSystemPrompt(for: responseStyle)
-        
-        var response = await llmEvaluator.generate(
+        var response = await IntentUtils.generateResponse(
             thread: thread,
+            model: selectedModel,
             systemPrompt: systemPrompt
         )
         
@@ -63,6 +75,9 @@ struct QuickChatIntent: AppIntent {
         // Add assistant message
         let assistantMessage = Message(content: response, role: .assistant)
         thread.addMessage(assistantMessage)
+        
+        // Save the chat if requested
+        IntentUtils.saveThreadIfNeeded(thread, saveChat: saveChat)
         
         // If continuous mode, prompt for next message
         if continuous {
