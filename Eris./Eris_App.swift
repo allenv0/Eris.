@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import AppIntents
 
 @main
 struct Eris_App: App {
@@ -22,6 +23,11 @@ struct Eris_App: App {
         
         // Initialize memory manager to handle memory warnings
         _ = MemoryManager.shared
+        
+        // Register app shortcuts
+        if #available(iOS 16.0, *) {
+            ErisShortcutsProvider.updateAppShortcutParameters()
+        }
     }
     
     var body: some Scene {
