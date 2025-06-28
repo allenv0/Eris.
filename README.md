@@ -85,6 +85,7 @@ Eris supports a variety of quantized models optimized for Apple Silicon:
 2. **Chat**: Start conversations with your AI assistant
 3. **Switch Models**: Access different models from Settings → Model Management
 4. **Manage Data**: Delete chats or models from Settings → Danger Zone
+5. **Use Shortcuts**: Integrate Eris with Apple Shortcuts for quick AI tasks
 
 ## Privacy & Security
 
@@ -110,8 +111,155 @@ Eris./
 │   ├── Chat/        # Chat interface
 │   ├── Settings/    # Settings and management
 │   └── Onboarding/  # First-run experience
-└── Utils/           # Utilities and helpers
+├── Utils/           # Utilities and helpers
+└── Intents/         # Shortcuts integration
 ```
+
+## Shortcuts Integration
+
+Eris includes powerful Shortcuts integration that allows you to use AI capabilities throughout iOS without opening the app. Perfect for quick tasks, automation, and integrating AI into your workflows.
+
+### Available Shortcuts
+
+#### 1. Quick Chat
+Start a conversation with Eris directly from Shortcuts.
+
+**Parameters:**
+- **Message** (required): Your question or prompt
+- **Continue Conversation**: Keep the conversation going after each response
+- **Response Style**: Choose how Eris responds
+  - Normal: Standard helpful responses
+  - Concise: Brief and to the point
+  - Detailed: Comprehensive answers with examples
+  - Creative: Imaginative and creative responses
+  - Professional: Formal business tone
+- **Save Chat**: Save the conversation in the app (default: off)
+- **Model Name**: Type a model name like "Llama", "Qwen", "Gemma" (optional)
+
+**Example Uses:**
+- "Hey Siri, ask Eris about quantum computing"
+- Quick questions while working
+- Integration with other shortcuts
+
+#### 2. Summarize Text
+Get quick summaries of any text.
+
+**Parameters:**
+- **Text to Summarize** (required): The content you want summarized
+- **Summary Length**: 
+  - Brief: 1-2 sentences
+  - Medium: 1 paragraph
+  - Detailed: Multiple paragraphs
+- **Save Chat**: Save the summary in the app (default: off)
+- **Model Name**: Choose a specific model (optional)
+
+**Example Uses:**
+- Summarize articles from Safari
+- Condense meeting notes
+- Quick overview of long emails
+
+#### 3. Translate Text
+Translate between 12+ languages using on-device AI.
+
+**Parameters:**
+- **Text to Translate** (required): The content to translate
+- **Target Language**: Language to translate to (default: Spanish)
+- **Source Language**: Language to translate from (default: Auto-detect)
+- **Save Chat**: Save the translation (default: off)
+- **Model Name**: Choose a specific model (optional)
+
+**Supported Languages:**
+English, Spanish, French, German, Italian, Portuguese, Chinese, Japanese, Korean, Arabic, Russian, Hindi
+
+**Example Uses:**
+- "Hey Siri, translate this to Spanish with Eris"
+- Translate clipboard content
+- Multi-language communication
+
+#### 4. Generate Text
+Create various types of content with AI assistance.
+
+**Parameters:**
+- **Type of Text**: What to generate
+  - Email
+  - Message
+  - Social Media Post
+  - Paragraph
+  - List
+  - Creative Ideas
+- **Topic or Context** (required): What the text should be about
+- **Tone**: Writing style
+  - Professional
+  - Casual
+  - Friendly
+  - Formal
+  - Humorous
+  - Neutral
+- **Save Chat**: Save the generated text (default: off)
+- **Model Name**: Choose a specific model (optional)
+
+**Example Uses:**
+- Generate email drafts
+- Create social media content
+- Brainstorm ideas
+- Write quick messages
+
+### Setting Up Shortcuts
+
+1. **Install Eris** and download at least one AI model
+2. **Open Shortcuts app** on your iPhone/iPad
+3. **Search for "Eris"** in the Gallery or when adding actions
+4. **Add shortcuts** to your collection
+5. **Customize** parameters as needed
+6. **Add to Siri** for voice activation
+
+### Advanced Tips
+
+#### Model Selection
+- Leave the model field empty to use your default model
+- Type partial names: "llama" finds all Llama models
+- Model names are case-insensitive
+- Only downloaded models can be used
+
+#### Performance Optimization
+- The first shortcut run loads the model (slower)
+- Subsequent runs are much faster (model stays in memory)
+- For best performance, use smaller models (0.5B-1.5B)
+
+#### Automation Ideas
+1. **Morning Briefing**: Summarize news articles automatically
+2. **Email Assistant**: Generate professional responses
+3. **Language Learning**: Translate and save phrases
+4. **Content Creation**: Generate daily social media posts
+5. **Research Helper**: Quick explanations of complex topics
+
+#### Combining with Other Apps
+- Use with **Safari**: Summarize web pages
+- Use with **Notes**: Generate content directly
+- Use with **Mail**: Draft responses
+- Use with **Messages**: Translate conversations
+- Use with **Clipboard**: Process copied text
+
+### Troubleshooting
+
+**"No model selected" error**
+- Open Eris and download a model first
+- Make sure a default model is selected in Settings
+
+**"Model not found" error**
+- Check the model name spelling
+- Ensure the model is downloaded
+- Try using partial names (e.g., "qwen" instead of full name)
+
+**Shortcuts run slowly**
+- First run is always slower (model loading)
+- Use smaller models for better performance
+- Close other apps to free memory
+
+**Chat not saving**
+- Enable "Save Chat" parameter
+- Check storage space
+- Ensure Eris has necessary permissions
 
 ## Roadmap
 
@@ -123,7 +271,7 @@ View our roadmap and progress at [eris.natxo.dev/roadmap](https://eris.natxo.dev
 - [ ] Model testing across devices (continue testing all AI models on different devices and platforms for optimal performance)
 
 ### Upcoming Features
-- [ ] Shortcuts integration (Apple Shortcuts for automation and quick actions)
+- [x] Shortcuts integration (Apple Shortcuts for automation and quick actions)
 - [ ] Voice input/dictation support (OpenAI Whisper or similar)
 - [ ] Image support in conversations
 - [ ] Native macOS app (not iPad port)
