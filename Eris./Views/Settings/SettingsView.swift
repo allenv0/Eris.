@@ -17,6 +17,7 @@ struct SettingsView: View {
     @State private var showAboutDeveloper = false
     @State private var showDangerZone = false
     @State private var showSafari = false
+    @State private var showDocumentation = false
     @State private var selectedURL: URL?
     @AppStorage("appTheme") private var appTheme: String = "system"
     
@@ -234,6 +235,19 @@ struct SettingsView: View {
                         // About
                         SettingsSection(title: "Information") {
                             VStack(spacing: 0) {
+                                Button(action: { showDocumentation = true }) {
+                                    SettingsRow(
+                                        icon: "book",
+                                        title: "Documentation",
+                                        subtitle: "Learn how to use Eris",
+                                        showChevron: true
+                                    )
+                                }
+                                .buttonStyle(SettingsRowButtonStyle())
+                                
+                                Divider()
+                                    .padding(.leading, 44)
+                                
                                 Button(action: { showAbout = true }) {
                                     SettingsRow(
                                         icon: "info.circle",
@@ -362,6 +376,9 @@ struct SettingsView: View {
         .background(Color(UIColor.systemGroupedBackground))
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showDocumentation) {
+            DocumentationView()
+        }
         .sheet(isPresented: $showAbout) {
             AboutView()
         }
