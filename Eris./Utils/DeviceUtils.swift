@@ -396,6 +396,15 @@ struct DeviceUtils {
         }
     }
     
+    static var iOSVersion: String {
+        return UIDevice.current.systemVersion
+    }
+    
+    static var isIOS26Beta: Bool {
+        let version = iOSVersion
+        return version.hasPrefix("26.")
+    }
+    
     private static func getCPUType() -> String {
         var size = 0
         sysctlbyname("machdep.cpu.brand_string", nil, &size, nil, 0)
